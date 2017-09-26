@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: KinesisFirehose template
+Parameters:
+  Prefix:
+    Type: String
+  SizeInMBs:
+    Type: Number
+  IntervalInSeconds:
+    Type: Number
+  FirehoseToS3RoleArn:
+    Type: String
+  FirehoseToESRoleArn:
+    Type: String
+  S3BucketArn:
+    Type: String
+  AESDomainArn:
+    Type: String
+
+Resources:
+  Firehose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Ref Prefix
+      # KFHからElasticsearchService へ送信設定
+      ElasticsearchDestinationConfiguration:
+        DomainARN: !Ref AESDomainArn
+        IndexName: !Ref Prefix
+        TypeName: !Ref Prefix
+        RoleARN: !Ref FirehoseToESRoleArn
+        # どちからの条件に当てはまったらKFHへログを送る
+        BufferingHints:
+          # 何秒間隔で送信するか
+          IntervalInSeconds: !Ref IntervalInSeconds
+          # 何mb単位で送信するか
+          SizeInMBs: !Ref SizeInMBs
+        # ログの送信の失敗時のアクション
+        RetryOptions:
+          # 何秒後に再送を行うか
+          DurationInSeconds: !Ref IntervalInSeconds
+        # Elasticsearchのインデックスを1日単位で切る
+        IndexRotationPeriod: OneDay
+
+        # S3へログを送信する設定
+        S3BackupMode: AllDocuments
+        S3Configuration:
+          BucketARN: !Ref S3BucketArn
+          RoleARN: !Ref FirehoseToS3RoleArn
+          # どちからの条件に当てはまったらS3へ保存を行う
+          BufferingHints:
+            # 何秒間隔で送信するか
+            IntervalInSeconds: !Ref IntervalInSeconds
+            # 何mb単位で送信するか
+            SizeInMBs: !Ref SizeInMBs
+          CompressionFormat: "GZIP"
+          Prefix: ''
+
+Outputs:
+  FirehoseArn:
+    Value: !Ref Firehose
+  

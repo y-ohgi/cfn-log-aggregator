@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: S3 template
+Parameters:
+  S3BucketName:
+    Type: String
+
+Resources:
+  S3:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref S3BucketName
+
+Outputs:
+  S3Arn:
+    Value: !GetAtt S3.Arn

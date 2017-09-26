@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Amazon Elasticsearch Service template
+Parameters:
+  Prefix:
+    Type: String
+  ElasticsearchVersion:
+    Type: String
+    Default: 5.5
+    AllowedValues:
+      - 5.5
+      - 5.3
+      - 5.1
+      - 2.3
+      - 1.5
+  EBSVolumeSize:
+    Type: Number
+    Default: 10
+  ESAllowIpAdresses:
+    Type: CommaDelimitedList
+    Default: "0.0.0.0"
+  InstanceCount:
+    Type: Number
+    Default: 1
+  InstanceType:
+    Type: String
+    AllowedValues:
+      - t2.small.elasticsearch
+      - t2.medium.elasticsearch
+      - m3.medium.elasticsearch
+      - m3.large.elasticsearch
+      - m3.xlarge.elasticsearch
+      - m3.2xlarge.elasticsearch
+      - m4.large.elasticsearch
+      - m4.xlarge.elasticsearch
+      - m4.2xlarge.elasticsearch
+      - m4.4xlarge.elasticsearch
+      - m4.10xlarge.elasticsearch
+      - c4.large.elasticsearch
+      - c4.xlarge.elasticsearch
+      - c4.2xlarge.elasticsearch
+      - c4.4xlarge.elasticsearch
+      - c4.8xlarge.elasticsearch
+      - r3.large.elasticsearch
+      - r3.xlarge.elasticsearch
+      - r3.2xlarge.elasticsearch
+      - r3.4xlarge.elasticsearch
+      - r3.8xlarge.elasticsearch
+      - r4.large.elasticsearch
+      - r4.xlarge.elasticsearch
+      - r4.2xlarge.elasticsearch
+      - r4.4xlarge.elasticsearch
+      - r4.8xlarge.elasticsearch
+      - r4.16xlarge.elasticsearch
+      - i2.xlarge.elasticsearch
+      - i2.2xlarge.elasticsearch
+      
+Resources:
+  ES:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      DomainName: !Ref Prefix
+      ElasticsearchVersion: !Ref ElasticsearchVersion
+      # Elasticsearchのインスタンスの設定
+      ElasticsearchClusterConfig:
+        InstanceCount: !Ref InstanceCount
+        InstanceType: !Ref InstanceType
+        ZoneAwarenessEnabled: "false"
+        DedicatedMasterEnabled: "false"
+      # EBS(ストレージ)関連
+      EBSOptions:
+        EBSEnabled: true
+        Iops: 0
+        VolumeSize: !Ref EBSVolumeSize
+        VolumeType: "gp2"
+      # ESへアクセス可能な権限の設定
+      AccessPolicies:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "es:*"
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:es:'
+                - !Ref AWS::Region
+                - ':'
+                - !Ref AWS::AccountId
+                - ':domain/'
+                - !Ref Prefix
+                - '/*'
+            Condition:
+              IpAddress:
+                aws:SourceIp: !Ref ESAllowIpAdresses
+
+Outputs:
+  DomainArn:
+    Value: !GetAtt ES.DomainArn

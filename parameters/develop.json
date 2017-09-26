@@ -1,0 +1,38 @@
+[
+  {
+    "ParameterKey": "Prefix",
+    "ParameterValue": "develop"
+  },
+  {
+    "ParameterKey": "S3Url",
+    "ParameterValue": "https://s3-ap-northeast-1.amazonaws.com/cfn-kfh-ohgi"
+  },
+  {
+    "ParameterKey": "ElasticsearchVersion",
+    "ParameterValue": "5.5"
+  },
+  {
+    "ParameterKey": "EBSVolumeSize",
+    "ParameterValue": "10"
+  },
+  {
+    "ParameterKey": "ESAllowIpAdresses",
+    "ParameterValue": "0.0.0.0"
+  },
+  {
+    "ParameterKey": "ESInstanceCount",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "ESInstanceType",
+    "ParameterValue": "t2.small.elasticsearch"
+  },
+  {
+    "ParameterKey": "KFHSizeInMBs",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "KFHIntervalInSeconds",
+    "ParameterValue": "60"
+  }
+]

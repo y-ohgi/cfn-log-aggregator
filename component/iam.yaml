@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM Role for KinesisFirehose template
+Parameters:
+  Prefix:
+    Type: String
+
+Resources:
+  # FirehoseからS3へ送信するためのロール
+  FirehoseToS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['-', [!Ref Prefix, 'FirehoseToS3Role']]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [firehose.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: 's3-access'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['s3:AbortMultipartUpload','s3:GetBucketLocation','s3:GetObject','s3:ListBucket','s3:ListBucketMultipartUploads','s3:PutObject']
+                Resource:
+                  - !Join ['', ['arn:aws:s3:::', !Ref Prefix, '*']]
+        - PolicyName: 'log-put'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['logs:PutEvents']
+                Resource:
+                  - 'arn:aws:logs:*:*:*'
+
+  # Firehoseから ElasticsearchServiceへ送信するためのロール
+  FirehoseToESRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ['', [!Ref Prefix, '-FirehoseToESRole']]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [firehose.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+        - PolicyName: 'es-access'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: 'es:*'
+                Resource:
+                  - !Join
+                    - ''
+                    - - 'arn:aws:es:'
+                      - !Ref AWS::Region
+                      - ':'
+                      - !Ref AWS::AccountId
+                      - ':domain/'
+                      - !Ref Prefix
+                      - '*'
+                  - !Join
+                    - ''
+                    - - 'arn:aws:es:'
+                      - !Ref AWS::Region
+                      - ':'
+                      - !Ref AWS::AccountId
+                      - ':domain/'
+                      - !Ref Prefix
+                      - '/*'
+
+        - PolicyName: 'log-put'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: ['logs:PutEvents']
+                Resource:
+                  - 'arn:aws:logs:*:*:*'
+
+Outputs:
+  FirehoseToS3RoleArn:
+    Value: !GetAtt FirehoseToS3Role.Arn
+  FirehoseToESRoleArn:
+    Value: !GetAtt FirehoseToESRole.Arn

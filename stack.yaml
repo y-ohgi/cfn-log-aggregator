@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Prefix:
+    Type: String
+  S3Url:
+    Type: String
+
+  # ES
+  ElasticsearchVersion:
+    Type: String
+    Default: 5.5
+  EBSVolumeSize:
+    Type: Number
+    Default: 10
+  ESAllowIpAdresses:
+    Type: CommaDelimitedList
+  ESInstanceCount:
+    Type: Number
+  ESInstanceType:
+    Type: String
+
+  # FirehoseStack
+  KFHSizeInMBs:
+    Type: Number
+    Default: 1
+  KFHIntervalInSeconds:
+    Type: Number
+    Default: 60
+
+Resources:
+  S3Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        S3BucketName: !Join ['-', [!Ref Prefix, 'kfh', 'log']]
+      TemplateURL: !Sub ${S3Url}/component/s3.yaml
+      TimeoutInMinutes: 10
+  
+  ESStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Prefix: !Ref Prefix
+        ElasticsearchVersion: !Ref ElasticsearchVersion
+        EBSVolumeSize: !Ref EBSVolumeSize
+        ESAllowIpAdresses: !Join [',', !Ref ESAllowIpAdresses]
+        InstanceCount: !Ref ESInstanceCount
+        InstanceType: !Ref ESInstanceType
+      TemplateURL:  !Sub ${S3Url}/component/es.yaml
+      TimeoutInMinutes: 20
+
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Prefix: !Ref Prefix
+      TemplateURL:  !Sub ${S3Url}/component/iam.yaml
+      TimeoutInMinutes: 10
+
+  FirehoseStack:
+    DependsOn: ['ESStack', 'S3Stack', 'IAMStack']
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Prefix: !Ref AWS::StackName
+        SizeInMBs: !Ref KFHSizeInMBs
+        IntervalInSeconds: !Ref KFHIntervalInSeconds
+        S3BucketArn: !GetAtt S3Stack.Outputs.S3Arn
+        AESDomainArn: !GetAtt ESStack.Outputs.DomainArn
+        FirehoseToS3RoleArn: !GetAtt IAMStack.Outputs.FirehoseToS3RoleArn
+        FirehoseToESRoleArn: !GetAtt IAMStack.Outputs.FirehoseToESRoleArn
+      TemplateURL:  !Sub ${S3Url}/component/firehose.yaml
+      TimeoutInMinutes: 10
+    
